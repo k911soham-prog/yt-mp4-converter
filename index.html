@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Video Downloader</title>
+    <style>
+           :root {
+  --bg: #0f1117;
+  --card: #161a22;
+  --text: #e6e6eb;
+  --muted: #9aa0aa;
+  --accent: #6ae3ff;
+  --accent-hover: #4fd1e8;
+  --border: #262b36;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Inter, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+header {
+  padding: 24px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.container {
+  margin-top: 40px;
+}
+
+.tool-box {
+  background: var(--card);
+  padding: 28px;
+  border-radius: 14px;
+  width: 90%;
+  max-width: 620px;
+  margin: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0c0f14;
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+button {
+  padding: 12px 20px;
+  background: var(--accent);
+  color: #001018;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  border-radius: 10px;
+  margin-top: 12px;
+  font-weight: 600;
+  transition: transform .1s ease, background .2s ease;
+}
+
+button:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#result {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+#embed {
+  width: 100%;
+  max-width: 560px;
+  height: 315px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+}
+
+#info {
+  text-align: left;
+  max-width: 560px;
+  width: 100%;
+  margin: auto;
+}
+
+#info img {
+  border-radius: 12px;
+}
+
+#status {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+progress {
+  width: 100%;
+  max-width: 420px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+progress::-webkit-progress-bar {
+  background: #0c0f14;
+}
+
+progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #6ae3ff, #8b5cf6);
+}
+
+.loader {
+  display: none;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #2a2f3a;
+  border-top: 3px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+footer {
+  margin-top: 50px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Universal Video Downloader</h1>
+    </header>
+    <div class="container">
+        <div class="tool-box">
+            <p>Paste a YouTube video link below:</p>
+            <input type="text" id="videoURL" placeholder="https://www.instagram.com/reels/... or https://youtu.be/...">
+            <button onclick="processVideo()">Embed Youtube Video</button>
+            <br><br>
+            <button onclick="downloadInsta()">Download Instagram Reel</button>
+         </div>
+         <div id="result">
+          <div id="videoContent"></div>
+
+           <p id="status"></p>
+ 
+         <div id="loader" class="loader" style="display:none;"></div>
+
+         <progress id="progressBar"
+            max="100"
+          value="0"
+           style="width:80%; display:none;">
+          </progress>
+         </div>
+    </div>
+    <footer>
+        © 2026 Made By Soham Kshirsagar with 💖
+    </footer>
+
+    <script>
+        function getYouTubeID(url) {
+            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        function processVideo() {
+            const urlInput = document.getElementById('videoURL').value.trim();
+            if (!urlInput) {
+                alert('Please paste a YouTube link!');
+                return;
+            }
+
+            const videoId = getYouTubeID(urlInput);
+
+            if (!videoId) {
+                alert('Invalid YouTube link! Make sure it\'s a valid YouTube URL.');
+                return;
+            }
+
+            const resultDiv = document.getElementById('videoContent');
+            resultDiv.innerHTML = `
+           <iframe id="embed" 
+           src="https://www.youtube.com/embed/${videoId}" 
+           frameborder="0" 
+            allowfullscreen>
+           </iframe>
+
+           <button id="downloadBtn" 
+           onclick="downloadMP4('https://www.youtube.com/watch?v=${videoId}')">
+           ⬇️ Download MP4
+           </button>
+          `;
+         }
+
+function downloadMP4(videoUrl) {
+  const status = document.getElementById('status');
+  const progressBar = document.getElementById('progressBar');
+
+  progressBar.style.display = 'block';
+  progressBar.value = 0;
+  status.textContent = 'Downloading YouTube video...';
+
+  let finished = false;
+
+  const evtSource = new EventSource(
+    `/download-progress?url=${encodeURIComponent(videoUrl)}`
+  );
+
+  evtSource.onmessage = function (e) {
+
+    if (e.data.startsWith('DONE:')) {
+      if (finished) return;
+      finished = true;
+
+      const id = e.data.split(':')[1];
+
+      evtSource.close();
+      status.textContent = 'Download ready! Click the button below.';
+      progressBar.value = 100;
+
+      const btn = document.createElement('button');
+      btn.textContent = '⬇️ Click to download video';
+      btn.onclick = () => {
+      window.location.href = `/download?id=${id}`;
+     };
+
+
+      document.getElementById('result').appendChild(btn);
+      return;
+    }
+    
+    else if (e.data.startsWith('ERROR')) {
+      status.textContent = 'YouTube download failed';
+      progressBar.style.display = 'none';
+      evtSource.close();
+    } 
+    else {
+      progressBar.value = parseInt(e.data);
+      status.textContent = `Downloading... ${progressBar.value}%`;
+    }
+  };
+}
+
+function downloadInsta() {
+  const url = document.getElementById('videoURL').value.trim();
+  if (!url.includes('instagram.com')) {
+    alert('Paste an Instagram Reel link');
+    return;
+  }
+
+  const status = document.getElementById('status');
+  const progressBar = document.getElementById('progressBar');
+
+  progressBar.value = 0;
+  progressBar.style.display = 'block';
+  status.textContent = 'Starting Instagram download...';
+
+  let finished = false;
+
+  const evt = new EventSource(
+    `/insta-progress?url=${encodeURIComponent(url)}`
+  );
+
+  evt.onmessage = (e) => {
+
+    if (e.data.startsWith('DONE:')) {
+      if (finished) return;
+      finished = true;
+
+      const id = e.data.split(':')[1];
+
+      evt.close();
+      status.textContent = 'Download ready! Click the button below.';
+      progressBar.value = 100;
+
+      const btn = document.createElement('button');
+      btn.textContent = '⬇️ Click to download reel';
+      btn.onclick = () => {
+        window.location.href = `/insta?id=${id}`;
+      };
+
+      document.getElementById('result').appendChild(btn);
+      return;
+    } 
+    else if (e.data.startsWith('ERROR')) {
+      status.textContent = 'Instagram download failed';
+      progressBar.style.display = 'none';
+      evt.close();
+    }
+    else {
+      progressBar.value = parseInt(e.data);
+      status.textContent = `Downloading Instagram… ${e.data}%`;
+    }
+  };
+}
+    </script>
+</body>
+</html>
